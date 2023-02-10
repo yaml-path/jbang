@@ -1,6 +1,6 @@
 # YAML-Path Command Line
 
-YAML-Path Command Line is a command line utility where you can read YAMLPath expressions or manipulate YAML files directly from your terminal.
+[YAML-Path](https://github.com/yaml-path/YamlPath) Command Line is a command line utility where you can read YAMLPath expressions or manipulate YAML files directly from your terminal.
 
 ## Installation
 
@@ -15,7 +15,7 @@ Note that you can find more information about how to install it in [here](https:
 Next, you need to register the YAMLPath jbang repository:
 
 ```
-jbang yamlpath@yaml-path/jbang
+curl -Ls https://sh.jbang.dev | bash -s - app install --fresh --force yamlpath@yaml-path/jbang
 ```
 
 This call does the following things:
@@ -24,3 +24,61 @@ This call does the following things:
 2.- Then from that catalog, it runs the 'yamlpath' script.
 
 And now you have `yamlpath` available on your `PATH`.
+
+## Usage
+
+- Help
+
+```
+> yamlpath --help
+Usage: yamlpath [-hV] [-o=<output>] [-r=<replacement>] expression [file]
+YAML-Path Expression Language Parser
+      expression          YAMLPath expression
+      [file]              YAML file
+  -h, --help              Show this help message and exit.
+  -o, --output=<output>   Sets the output file
+  -r, --replace-with=<replacement>
+                          Replace matching locations with this value
+  -V, --version           Print version information and exit.
+```
+
+- Find elements using YAMLPath expressions
+
+```
+> yamlpath "spec.selector.matchLabels.'app.kubernetes.io/name'" examples/test.yaml 
+[example]
+```
+
+Where the first parameter is the YAMLPath expression and the second parameter is the YAML file (we can also specify a folder).
+
+- Find elements and replace with a supplied property
+
+```
+> yamlpath --replace-with="anotherValue" metadata.name examples/test.yaml 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anotherValue
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+  type: ClusterIP
+```
+
+In this example, the updated YAML resource will be printed into the standard output. If you want to write the output into a separated file, you can specify the location using the parameter `--output`:
+
+```
+> yamlpath --replace-with="anotherValue" --output=target/result.yaml metadata.name examples/test.yaml 
+Output written in 'target/result.yaml'
+```
+
+# Development
+
+You can develop the command line using your favorite IDE. For example, using Intellij:
+
+```
+jbang edit --open=idea yamlpath.java
+```
