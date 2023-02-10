@@ -1,0 +1,9 @@
+{
+    "catalogs": {},
+    "aliases": {
+        "yamlpath": {
+            "script-ref": "yamlpath.java"
+        }
+    }
+}
+  
