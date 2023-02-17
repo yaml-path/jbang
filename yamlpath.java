@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
@@ -52,16 +53,20 @@ class yamlpath implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         List<InputStream> inputs = new ArrayList<>();
-        for (String source : sources) {
-            File file = Paths.get(source).toFile();
-            if (!file.exists()) {
-                throw new RuntimeException("File '" + source + "' does not exist!");
-            }
+        if (sources != null) {
+            for (String source : sources) {
+                File file = Paths.get(source).toFile();
+                if (!file.exists()) {
+                    throw new RuntimeException("File '" + source + "' does not exist!");
+                }
 
-            inputs.addAll(findFiles(file));
+                inputs.addAll(findFiles(file));
+            }
+        } else {
+            inputs.add(System.in);
         }
 
-        YamlExpressionParser parser = YamlPath.from(inputs.toArray(new InputStream[0]));
+        YamlExpressionParser parser = new YamlExpressionParser(toResources(inputs));
 
         if (replacement == null) {
             // simply print value
@@ -96,6 +101,25 @@ class yamlpath implements Callable<Integer> {
         }
 
         return 0;
+    }
+
+    private List<Map<Object, Object>> toResources(List<InputStream> inputs) throws IOException {
+        List<Map<Object, Object>> resources = new ArrayList();
+        for (InputStream is : inputs) {
+            List<Map<Object, Object>> resourcesInInput = SerializationUtils.unmarshalAsListOfMaps(is);
+            if (resourcesInInput.size() == 1) {
+                Map<Object, Object> first = resourcesInInput.get(0);
+                Object kind = first.get("kind");
+                if (kind != null && "List".equalsIgnoreCase(kind.toString())) {
+                    resources.addAll((Collection<? extends Map<Object, Object>>) first.get("items"));
+                } else {
+                    resources.add(first);
+                }
+            } else {
+                resources.addAll(resourcesInInput);
+            }
+        }
+        return resources;
     }
 
     private Collection<InputStream> findFiles(File file) throws FileNotFoundException {
