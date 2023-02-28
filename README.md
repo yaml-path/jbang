@@ -89,7 +89,7 @@ metadata.name: example
 ```
 
 - Usage in pipelines
-- 
+
 ```
 > cat examples/test.yaml | yamlpath -e "(kind==Service)" | yamlpath -e metadata.name -e metadata.kind
 ---
