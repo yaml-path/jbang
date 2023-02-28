@@ -80,7 +80,7 @@ Output written in 'target/result.yaml'
 - Find several elements from input
 
 ```
-> cat examples/test.yaml | yamlpath -e metadata.name -e metadata.kind
+> cat examples/test.yaml | yamlpath -e metadata.name -e kind
 ---
 kind:
   - Service
@@ -91,7 +91,7 @@ metadata.name: example
 - Usage in pipelines
 
 ```
-> cat examples/test.yaml | yamlpath -e "(kind==Service)" | yamlpath -e metadata.name -e metadata.kind
+> cat examples/test.yaml | yamlpath -e "(kind==Service)" | yamlpath -e metadata.name -e kind
 ---
 kind: Service
 metadata.name: example
