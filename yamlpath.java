@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS info.picocli:picocli:4.5.0
-//DEPS io.github.yaml-path:yaml-path:0.0.5
+//DEPS io.github.yaml-path:yaml-path:0.0.7
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -20,9 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+
 import io.github.yamlpath.YamlExpressionParser;
-import io.github.yamlpath.YamlPath;
 import io.github.yamlpath.utils.SerializationUtils;
+import io.github.yamlpath.utils.StringUtils;
 import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
@@ -33,11 +36,11 @@ import picocli.CommandLine.Parameters;
         description = "YAML-Path Expression Language Parser")
 class yamlpath implements Callable<Integer> {
 
-    @Parameters(index = "0", paramLabel = "expression", description = "YAMLPath expression")
-    private String expression;
-
-    @Parameters(index = "1", paramLabel = "file", description = "YAML file")
+    @Parameters(index = "0", paramLabel = "file", description = "YAML file")
     private List<String> sources;
+
+    @CommandLine.Option(names = {"-e", "--expression"}, description = "YAMLPath expression", required = true)
+    private List<String> expressions;
 
     @CommandLine.Option(names = {"-r", "--replace-with"}, description = "Replace matching locations with this value")
     private String replacement;
@@ -69,8 +72,15 @@ class yamlpath implements Callable<Integer> {
         YamlExpressionParser parser = new YamlExpressionParser(toResources(inputs));
 
         if (replacement == null) {
+            Object value;
             // simply print value
-            System.out.println(parser.read(expression));
+            if (expressions.size() == 1) {
+                value = parser.read(expressions.get(0));
+            } else {
+                value = parser.read(expressions);
+            }
+
+            System.out.println(toYaml(value));
         } else {
             OutputStream os;
             if (output != null) {
@@ -90,9 +100,10 @@ class yamlpath implements Callable<Integer> {
             }
 
             // Otherwise, print modified yaml files
-            parser.write(expression, replacement);
+            parser.write(expressions, replacement);
+
             for (Map<Object, Object> resource : parser.getResources()) {
-                os.write(SerializationUtils.yamlMapper().writeValueAsString(resource).getBytes(StandardCharsets.UTF_8));
+                os.write(toYaml(resource).getBytes(StandardCharsets.UTF_8));
             }
 
             if (output != null) {
@@ -106,7 +117,7 @@ class yamlpath implements Callable<Integer> {
     private List<Map<Object, Object>> toResources(List<InputStream> inputs) throws IOException {
         List<Map<Object, Object>> resources = new ArrayList();
         for (InputStream is : inputs) {
-            List<Map<Object, Object>> resourcesInInput = SerializationUtils.unmarshalAsListOfMaps(is);
+            List<Map<Object, Object>> resourcesInInput = fromYaml(is);
             if (resourcesInInput.size() == 1) {
                 Map<Object, Object> first = resourcesInInput.get(0);
                 Object kind = first.get("kind");
@@ -122,6 +133,16 @@ class yamlpath implements Callable<Integer> {
         return resources;
     }
 
+    private List<Map<Object, Object>> fromYaml(InputStream is) throws IOException {
+        String content = StringUtils.readAllBytes(is);
+        try {
+            return SerializationUtils.unmarshalAsListOfMaps(content);
+        } catch (IOException e) {
+            return SerializationUtils.yamlMapper().readValue(content, new TypeReference<List<Map<Object, Object>>>() {
+            });
+        }
+    }
+
     private Collection<InputStream> findFiles(File file) throws FileNotFoundException {
         List<InputStream> inputs = new ArrayList<>();
         if (file.isDirectory()) {
@@ -133,5 +154,9 @@ class yamlpath implements Callable<Integer> {
         }
 
         return inputs;
+    }
+
+    private String toYaml(Object object) throws JsonProcessingException {
+        return SerializationUtils.yamlMapper().writeValueAsString(object);
     }
 }

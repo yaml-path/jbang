@@ -31,10 +31,12 @@ And now you have `yamlpath` available on your `PATH`.
 
 ```
 > yamlpath --help
-Usage: yamlpath [-hV] [-o=<output>] [-r=<replacement>] expression [file]
+Usage: yamlpath [-hV] [-o=<output>] [-r=<replacement>] -e=<expressions>
+                [-e=<expressions>]... [file]
 YAML-Path Expression Language Parser
-      expression          YAMLPath expression
       [file]              YAML file
+  -e, --expression=<expressions>
+                          YAMLPath expression
   -h, --help              Show this help message and exit.
   -o, --output=<output>   Sets the output file
   -r, --replace-with=<replacement>
@@ -45,7 +47,7 @@ YAML-Path Expression Language Parser
 - Find elements using YAMLPath expressions
 
 ```
-> yamlpath "spec.selector.matchLabels.'app.kubernetes.io/name'" examples/test.yaml 
+> yamlpath -e "spec.selector.matchLabels.'app.kubernetes.io/name'" examples/test.yaml 
 [example]
 ```
 
@@ -54,7 +56,7 @@ Where the first parameter is the YAMLPath expression and the second parameter is
 - Find elements and replace with a supplied property
 
 ```
-> yamlpath --replace-with="anotherValue" metadata.name examples/test.yaml 
+> yamlpath --replace-with="anotherValue" -e metadata.name examples/test.yaml 
 ---
 apiVersion: v1
 kind: Service
@@ -71,8 +73,28 @@ spec:
 In this example, the updated YAML resource will be printed into the standard output. If you want to write the output into a separated file, you can specify the location using the parameter `--output`:
 
 ```
-> yamlpath --replace-with="anotherValue" --output=target/result.yaml metadata.name examples/test.yaml 
+> yamlpath --replace-with="anotherValue" --output=target/result.yaml -e metadata.name examples/test.yaml 
 Output written in 'target/result.yaml'
+```
+
+- Find several elements from input
+
+```
+> cat examples/test.yaml | yamlpath -e metadata.name -e metadata.kind
+---
+kind:
+  - Service
+  - Deployment
+metadata.name: example
+```
+
+- Usage in pipelines
+- 
+```
+> cat examples/test.yaml | yamlpath -e "(kind==Service)" | yamlpath -e metadata.name -e metadata.kind
+---
+kind: Service
+metadata.name: example
 ```
 
 # Development
