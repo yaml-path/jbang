@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -47,6 +48,12 @@ class yamlpath implements Callable<Integer> {
 
     @CommandLine.Option(names = {"-o", "--output"}, description = "Sets the output file")
     private String output;
+
+    @CommandLine.Option(names = {"-f", "--format"}, description = "Sets the output format", type = Format.class, defaultValue = "YAML")
+    private Format format;
+
+    @CommandLine.Option(names = {"-s", "--single"}, description = "Unify result into a single result", fallbackValue = "true", defaultValue = "false")
+    private boolean single;
 
     public static void main(String... args) {
         int exitCode = new CommandLine(new yamlpath()).execute(args);
@@ -80,7 +87,7 @@ class yamlpath implements Callable<Integer> {
                 value = parser.read(expressions);
             }
 
-            System.out.println(toYaml(value));
+            System.out.println(parse(value));
         } else {
             OutputStream os;
             if (output != null) {
@@ -103,7 +110,7 @@ class yamlpath implements Callable<Integer> {
             parser.write(expressions, replacement);
 
             for (Map<Object, Object> resource : parser.getResources()) {
-                os.write(toYaml(resource).getBytes(StandardCharsets.UTF_8));
+                os.write(parse(resource).getBytes(StandardCharsets.UTF_8));
             }
 
             if (output != null) {
@@ -112,6 +119,21 @@ class yamlpath implements Callable<Integer> {
         }
 
         return 0;
+    }
+
+    private String parse(Object value) throws JsonProcessingException {
+        if (single) {
+            // deduplicate sets when there is a single result
+            while (value instanceof Set set && set.size() == 1) {
+                value = set.iterator().next();
+            }
+        }
+
+        if (Format.YAML.equals(format)) {
+            return toYaml(value);
+        }
+
+        return value.toString();
     }
 
     private List<Map<Object, Object>> toResources(List<InputStream> inputs) throws IOException {
@@ -158,5 +180,10 @@ class yamlpath implements Callable<Integer> {
 
     private String toYaml(Object object) throws JsonProcessingException {
         return SerializationUtils.yamlMapper().writeValueAsString(object);
+    }
+
+    enum Format {
+        YAML,
+        PLAIN
     }
 }

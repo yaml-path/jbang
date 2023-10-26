@@ -88,6 +88,20 @@ kind:
 metadata.name: example
 ```
 
+- Unify multiple outputs into a single result
+
+```
+> yamlpath --single -e tags.name examples/tags.yaml 
+```
+
+- Format options.
+
+By default, the default format is YAML. However, you can also use the PLAIN format to not parse the output into a YAML file. This is useful when using yamlpath and using the output into a shell or bash scripts.
+
+```
+> yamlpath --format=PLAIN -e tags.name examples/tags.yaml 
+```
+
 - Usage in pipelines
 
 ```
@@ -103,4 +117,10 @@ You can develop the command line using your favorite IDE. For example, using Int
 
 ```
 jbang edit --open=idea yamlpath.java
+```
+
+To test your changes, you can run:
+
+```
+jbang yamlpath.java <add the yamlpath parameters>
 ```
