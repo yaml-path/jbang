@@ -1,6 +1,6 @@
 ///usr/bin/env jbang "$0" "$@" ; exit $?
 //DEPS info.picocli:picocli:4.5.0
-//DEPS io.github.yaml-path:yaml-path:0.0.7
+//DEPS io.github.yaml-path:yaml-path:0.0.10
 
 import java.io.File;
 import java.io.FileInputStream;
